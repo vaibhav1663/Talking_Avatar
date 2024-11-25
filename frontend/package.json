@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
     "@google/generative-ai": "^0.2.0",
+    "@mui/icons-material": "^6.1.8",
+    "@mui/material": "^6.1.8",
     "@react-three/drei": "^9.17.1",
     "@react-three/fiber": "^8.1.0",
     "@testing-library/jest-dom": "^5.16.4",
@@ -20,11 +24,13 @@
     "react-async-hook": "^4.0.0",
     "react-audio-player": "^0.17.0",
     "react-dom": "^18.2.0",
+    "react-media-recorder": "^1.7.1",
     "react-scripts": "5.0.1",
     "react-speech-recognition": "^3.10.0",
     "react-toastify": "^9.1.3",
     "three": "^0.142.0",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "zustand": "^5.0.1"
   },
   "proxy": "http://localhost:8080/",
   "scripts": {

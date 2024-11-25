@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const host = "http://127.0.0.1:5000"; // Base URL for Flask backend
+const host = "https://avatarendpointsdk.onrender.com"; // Base URL for Flask backend
 
 /**
  * Fetches audio, visemes, and AI response from the Flask backend.

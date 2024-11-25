@@ -1,0 +1,16 @@
+langchain
+langchain_community
+azure-cognitiveservices-speech
+google-cloud-speech
+langchain_core
+langchain_openai
+python-dotenv
+flask
+flask_cors
+flask[async]
+tiktoken
+orjson
+uvicorn
+qdrant-client
+openai
+gunicorn

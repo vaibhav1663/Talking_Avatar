@@ -1,0 +1,20 @@
+/* App.css or a global CSS file */
+html, body, #root {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* Prevents scrolling */
+  }
+  
+  .App {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  canvas {
+    display: block; /* Removes default margins */
+  }
