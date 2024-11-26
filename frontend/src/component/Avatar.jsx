@@ -9,7 +9,7 @@ import _ from 'lodash';
 import createAnimation from '../converter';
 import blinkData from '../blendDataBlink.json';
 
-const host = 'https://talking-avatar.onrender.com';
+const host = 'http://127.0.0.1:5000';
 
  export default function Avatar({ avatar_url, speak, setSpeak, text, setAudioSource, playing }) {
 
@@ -208,7 +208,7 @@ const host = 'https://talking-avatar.onrender.com';
   
         })
   
-    }, [speak]);
+    }, [morphTargetDictionaryBody, morphTargetDictionaryLowerTeeth, setAudioSource, setSpeak, speak, text]);
   
     let idleFbx = useFBX('/idle.fbx');
     let { clips: idleClips } = useAnimations(idleFbx.animations);
@@ -260,7 +260,7 @@ const host = 'https://talking-avatar.onrender.com';
   
       });
   
-    }, [playing]);
+    }, [clips, mixer, playing]);
   
   
     useFrame((state, delta) => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import useSpeechStore from "./store/useSpeechStore";
 import ChatInputWidget from "./ChatInputWidget";
 import "./Chat.css";
 
@@ -10,6 +11,11 @@ const Chat = () => {
   const [loading, setLoading] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
   const chatContentRef = useRef(null);
+
+  // Zustand store for speech-related state
+  const setSpeak = useSpeechStore((state) => state.setSpeak);
+  const setAudio = useSpeechStore((state) => state.setAudio);
+  const setBlendshapes = useSpeechStore((state) => state.setBlendshapes);
 
   const scrollToBottom = () => {
     if (chatContentRef.current) {
@@ -32,19 +38,22 @@ const Chat = () => {
       setLoading(true);
 
       try {
-        const response = await axios.post("https://avatarendpointsdk.onrender.com/generate", {
+        const response = await axios.post("http://127.0.0.1:5000/generate", {
           input: data.text,
         });
 
-        const { audio, visemes, response: botResponse } = response.data;
+        const { text: botResponse, audio, blendshapes } = response.data;
 
+        // Update chat with bot response
         setChats((prevChats) => [
           ...prevChats,
           { msg: botResponse, who: "bot" },
         ]);
 
-        // Play audio or update avatar if needed
-        console.log("Audio and visemes data:", audio, visemes);
+        // Update Zustand store
+        setAudio(audio);
+        setBlendshapes(blendshapes);
+        setSpeak(true); // Trigger Avatar speech
       } catch (error) {
         console.error("Error fetching response from /generate:", error);
         setChats((prevChats) => [
@@ -85,15 +94,18 @@ const Chat = () => {
           }
         );
 
-        const { audio, visemes, response: botResponse } = generateResponse.data;
+        const { text: botResponse, audio, blendshapes } = generateResponse.data;
 
+        // Update chat with bot response
         setChats((prevChats) => [
           ...prevChats,
           { msg: botResponse, who: "bot" },
         ]);
 
-        // Play audio or update avatar if needed
-        console.log("Audio and visemes data:", audio, visemes);
+        // Update Zustand store
+        setAudio(audio);
+        setBlendshapes(blendshapes);
+        setSpeak(true); // Trigger Avatar speech
       } catch (error) {
         console.error("Error processing audio input:", error);
         setChats((prevChats) => [
@@ -121,7 +133,10 @@ const Chat = () => {
             <div key={index} className={`chat-message ${chat.who}`}>
               {chat.who === "bot" && (
                 <figure className="avatar">
-                  <img src="https://i.ibb.co/bXnQgZg/BG-image.png" alt="avatar" />
+                  <img
+                    src="https://i.ibb.co/bXnQgZg/BG-image.png"
+                    alt="avatar"
+                  />
                 </figure>
               )}
               <div className="message-text">{chat.msg}</div>
@@ -131,7 +146,10 @@ const Chat = () => {
           {loading && (
             <div className="chat-message loading">
               <figure className="avatar">
-                <img src="https://i.ibb.co/bXnQgZg/BG-image.png" alt="avatar" />
+                <img
+                  src="https://i.ibb.co/bXnQgZg/BG-image.png"
+                  alt="avatar"
+                />
               </figure>
               <div
                 style={{ padding: "5px", display: "flex", alignItems: "center" }}
@@ -161,3 +179,5 @@ const Chat = () => {
 };
 
 export default Chat;
+
+

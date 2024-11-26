@@ -1,8 +1,4 @@
-body {
-     background-color: #c7ecee;
-     height: 100vh;
-   }
-   
+
    /* Positioning the dropdown menu at the top-left corner */
    .select-menu {
      position: fixed; /* Fixed position to stay on the screen */
