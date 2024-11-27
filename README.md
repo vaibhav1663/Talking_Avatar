@@ -117,9 +117,12 @@ src/
 │   ├── LanguageSelector.jsx
 │   ├── LanguageSelector.css
 │   ├── Experience.jsx
+|   ├── Loader.jsx
+|   ├── Loader.css
 │   ├── makeSpeech.jsx
 │   └── store/
 │       ├── useLanguageStore.js
+|       ├── useLoaderStore.js
 │       └── useSpeechStore.js
 ├── App.js
 └── App.css

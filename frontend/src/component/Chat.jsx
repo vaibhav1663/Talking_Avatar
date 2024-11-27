@@ -66,58 +66,6 @@ const Chat = () => {
       } finally {
         setLoading(false);
       }
-    } else if (data.audioFile) {
-      setLoading(true);
-
-      try {
-        const formData = new FormData();
-        const audioBlob = new Blob([new Uint8Array(data.audioFile)], {
-          type: "audio/wav",
-        });
-        formData.append("audio", audioBlob, "recording.wav");
-
-        const transcriptionResponse = await axios.post(
-          "http://127.0.0.1:5000/transcribe",
-          formData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          }
-        );
-
-        const transcript = transcriptionResponse.data.transcript;
-        setChats((prevChats) => [...prevChats, { msg: transcript, who: "me" }]);
-
-        const generateResponse = await axios.post(
-          "http://127.0.0.1:5000/generate",
-          {
-            input: transcript,
-          }
-        );
-
-        const { text: botResponse, audio, blendshapes } = generateResponse.data;
-
-        // Update chat with bot response
-        setChats((prevChats) => [
-          ...prevChats,
-          { msg: botResponse, who: "bot" },
-        ]);
-
-        // Update Zustand store
-        setAudio(audio);
-        setBlendshapes(blendshapes);
-        setSpeak(true); // Trigger Avatar speech
-      } catch (error) {
-        console.error("Error processing audio input:", error);
-        setChats((prevChats) => [
-          ...prevChats,
-          {
-            msg: "Sorry, I couldn't process your audio input. Please try again.",
-            who: "bot",
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
     }
   };
 
@@ -179,5 +127,6 @@ const Chat = () => {
 };
 
 export default Chat;
+
 
 

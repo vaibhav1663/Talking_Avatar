@@ -73,7 +73,7 @@ conversation_rag_chain = create_retrieval_chain(retriever_chain, stuff_documents
 
 # Initialize Azure Speech Synthesizer
 speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=service_region)
-speech_config.speech_synthesis_voice_name = "en-US-AndrewMultilingualNeural"  # Set default voice
+speech_config.speech_synthesis_voice_name = "en-US-EmmaMultilingualNeural"  # Set default voice
 speech_config.set_speech_synthesis_output_format(speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3)  # Set output format to mp3
 
 synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
