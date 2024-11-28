@@ -54,7 +54,7 @@ def get_vector_store():
 vector_store = get_vector_store()
 
 # Preinitialize components for performance optimization
-llm = ChatOpenAI()
+llm = ChatOpenAI(model='gpt-4o')
 retriever = vector_store.as_retriever()
 
 # Prebuild retriever chain
