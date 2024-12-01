@@ -208,13 +208,29 @@ export default function Avatar({ avatar_url, text, setAudioSource, playing }) {
       // Play the audio
       const audioElement = new Audio(audioUrl);
 
+      // Set up the onplay event
+     
+    // Use canplaythrough to wait until the audio is fully ready to play
+    audioElement.addEventListener('canplaythrough', () => {
+      console.log('Audio is ready to play.');
+
+      // Create animations after audio is ready
       let newClips = [
         createAnimation(blendshapes, morphTargetDictionaryBody, 'HG_Body'),
-        createAnimation(blendshapes, morphTargetDictionaryLowerTeeth, 'HG_TeethLower')];
+        createAnimation(blendshapes, morphTargetDictionaryLowerTeeth, 'HG_TeethLower'),
+      ];
 
-      audioElement.play();
-      
       setClips(newClips);
+
+      // Play the audio
+      audioElement.play().catch((err) => {
+        console.error('Error playing audio:', err);
+      });
+    });
+
+    // Load the audio
+    audioElement.load();
+
     } catch (err) {
       console.error('Failed to play audio:', err);
       console.error('Base64 string:', base64Audio);
@@ -268,22 +284,25 @@ export default function Avatar({ avatar_url, text, setAudioSource, playing }) {
     let blinkAction = mixer.clipAction(blinkClip);
     blinkAction.play();
 
-
   }, []);
 
   // Play animation clips when available
   useEffect(() => {
-
-    if (playing === false)
-      return;
-
-    _.each(clips, clip => {
-      let clipAction = mixer.clipAction(clip);
-      clipAction.setLoop(THREE.LoopOnce);
-      clipAction.play();
-
-    });
-
+    if (playing === false) return;
+  
+    // Set the delay in milliseconds
+    const delay = 400; // 1 second delay
+  
+    const timeoutId = setTimeout(() => {
+      _.each(clips, clip => {
+        let clipAction = mixer.clipAction(clip);
+        clipAction.setLoop(THREE.LoopOnce);
+        clipAction.play();
+      });
+    }, delay);
+  
+    // Clean up the timeout on component unmount or when dependencies change
+    return () => clearTimeout(timeoutId);
   }, [clips, mixer, playing]);
 
 
@@ -301,14 +320,14 @@ export default function Avatar({ avatar_url, text, setAudioSource, playing }) {
 
 
   useEffect(() => {
-    
+
 
     try {
       if (speak === false)
         return;
 
       // console.log(filename);
-      
+
       // filename = host + filename;
       setAudioBase64(audio);
       // setAudioSource(filename);
