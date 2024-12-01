@@ -6,26 +6,22 @@ from langchain_community.vectorstores.qdrant import Qdrant
 import qdrant_client
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains import (
-    create_history_aware_retriever,
-    create_retrieval_chain,
-)
+from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from Template.promptAI import AI_prompt
 import azure.cognitiveservices.speech as speechsdk
 import base64
-import asyncio
 import os
 import orjson
 import json
-from Template.blendshape_names import blendshape_names  # Import blendshape names from Python file
+from Template.blendshape_names import blendshape_names
 
 # Load environment variables
 load_dotenv()
 
 # Initialize Flask App
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000"])  # Allow CORS for specific origin
+CORS(app, origins=["http://localhost:3000"])
 
 # Azure Speech SDK Configuration
 speech_key = os.getenv("SPEECH_KEY")
@@ -37,54 +33,74 @@ collection_name = os.getenv("QDRANT_COLLECTION_NAME")
 # Global chat history
 chat_history = []
 
-# Initialize vector store
+# Function to initialize vector store
 def get_vector_store():
-    client = qdrant_client.QdrantClient(
-        url=os.getenv("QDRANT_HOST"),
-        api_key=os.getenv("QDRANT_API_KEY"),
-    )
-    embeddings = OpenAIEmbeddings()
-    vector_store = Qdrant(
-        client=client,
-        collection_name=collection_name,
-        embeddings=embeddings,
-    )
-    return vector_store
+    try:
+        client = qdrant_client.QdrantClient(
+            url=os.getenv("QDRANT_HOST"),
+            api_key=os.getenv("QDRANT_API_KEY"),
+        )
+        embeddings = OpenAIEmbeddings()
+        vector_store = Qdrant(
+            client=client,
+            collection_name=collection_name,
+            embeddings=embeddings,
+        )
+        print("Successfully connected to Qdrant vector store.")
+        return vector_store
+    except Exception as e:
+        print(f"Error initializing vector store: {e}")
+        raise
 
+# Initialize vector store
 vector_store = get_vector_store()
 
-# Preinitialize components for performance optimization
-llm = ChatOpenAI(model='gpt-4o')
-retriever = vector_store.as_retriever()
+# Function to create the context retriever chain
+def get_context_retriever_chain(vector_store=vector_store):
+    try:
+        llm = ChatOpenAI()
+        retriever = vector_store.as_retriever()
+        prompt = ChatPromptTemplate.from_messages([
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("user", "{input}"),
+            ("user", "Generate a search query based on the conversation."),
+        ])
+        retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
+        print("Context retriever chain created successfully.")
+        return retriever_chain
+    except Exception as e:
+        print(f"Error creating context retriever chain: {e}")
+        raise
 
-# Prebuild retriever chain
-retriever_prompt = ChatPromptTemplate.from_messages([
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("user", "{input}"),
-    ("user", "Generate a search query based on the conversation."),
-])
-retriever_chain = create_history_aware_retriever(llm, retriever, retriever_prompt)
-
-# Prebuild conversational RAG chain
-conversational_prompt = ChatPromptTemplate.from_messages([
-    ("system", AI_prompt),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("user", "{input}"),
-])
-stuff_documents_chain = create_stuff_documents_chain(llm, conversational_prompt)
-conversation_rag_chain = create_retrieval_chain(retriever_chain, stuff_documents_chain)
+# Function to create the conversational RAG chain
+def get_conversational_rag_chain(retriever_chain):
+    try:
+        llm = ChatOpenAI()
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", AI_prompt),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("user", "{input}"),
+        ])
+        stuff_documents_chain = create_stuff_documents_chain(llm, prompt)
+        print("Conversational RAG chain created successfully.")
+        return create_retrieval_chain(retriever_chain, stuff_documents_chain)
+    except Exception as e:
+        print(f"Error creating conversational RAG chain: {e}")
+        raise
 
 # Initialize Azure Speech Synthesizer
 speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=service_region)
 speech_config.speech_synthesis_voice_name = "en-US-EmmaMultilingualNeural"
-speech_config.set_speech_synthesis_output_format(
-    speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
-)
+speech_config.set_speech_synthesis_output_format(speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3)
 
 synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
 
 # TTS function to synthesize response and generate viseme + blendshape data
 def synthesize_response(text):
+    if not text or not isinstance(text, str):
+        print("Invalid text passed to synthesize_response.")
+        return {"audio": None, "blendshapes": []}
+
     visemes = []
     blendshapes = []
     time_step = 1 / 60  # 60 FPS
@@ -100,19 +116,22 @@ def synthesize_response(text):
         </voice>
     </speak>
     '''
-    ssml = ssml_template.format(
-        voice_name=speech_config.speech_synthesis_voice_name,
-        text=text
-    )
+    ssml = ssml_template.format(voice_name=speech_config.speech_synthesis_voice_name, text=text)
+    print(f"Generated SSML: {ssml}")  # Log SSML for debugging
 
     def viseme_callback(evt):
         nonlocal time_stamp
         try:
-            animation_data = json.loads(evt.animation)
-            for blend_array in animation_data.get("BlendShapes", []):
-                blend = {blendshape_names[i]: blend_array[i] for i in range(len(blendshape_names))}
-                blendshapes.append({"time": time_stamp, "blendshapes": blend})
-                time_stamp += time_step
+            if evt.animation:
+                animation_data = json.loads(evt.animation)
+                for blend_array in animation_data.get("BlendShapes", []):
+                    blend = {blendshape_names[i]: blend_array[i] for i in range(len(blendshape_names))}
+                    blendshapes.append({"time": time_stamp, "blendshapes": blend})
+                    time_stamp += time_step
+            else:
+                print("No animation data received in viseme callback.")
+        except json.JSONDecodeError as e:
+            print(f"JSON decoding error in viseme_callback: {e}")
         except Exception as e:
             print(f"Error in viseme_callback: {e}")
 
@@ -121,7 +140,10 @@ def synthesize_response(text):
 
     if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
         audio_data = base64.b64encode(result.audio_data).decode("utf-8")
-        return {"audio": audio_data, "blendshapes": blendshapes}
+        return {
+            "audio": audio_data,
+            "blendshapes": blendshapes,
+        }
     else:
         print(f"Speech synthesis failed: {result.reason}")
         return {"audio": None, "blendshapes": []}
@@ -134,23 +156,55 @@ def jsonify_fast(data):
 @app.route('/generate', methods=['POST'])
 async def generate():
     user_input = request.json.get('input')
+
+    global chat_history
+    if chat_history is None:
+        chat_history = []
+
     chat_history.append(HumanMessage(content=user_input))
-    response = await asyncio.to_thread(conversation_rag_chain.invoke, {
-        "chat_history": chat_history,
-        "input": user_input,
-    })
-    response_content = response.get("answer", "")
-    chat_history.append(AIMessage(content=response_content))
-    audio_response = await asyncio.to_thread(synthesize_response, response_content)
-    return jsonify_fast({
-        "text": response_content,
-        "audio": audio_response.get("audio"),
-        "blendshapes": audio_response.get("blendshapes"),
-    })
+
+    try:
+        # Dynamically initialize vector store
+        vector_store = get_vector_store()
+
+        # Generate context retriever chain
+        retriever_chain = get_context_retriever_chain(vector_store)
+
+        # Generate conversational RAG chain
+        conversation_rag_chain = get_conversational_rag_chain(retriever_chain)
+
+        # Generate response
+        response = conversation_rag_chain.invoke({
+            "chat_history": chat_history,
+            "input": user_input,
+        })
+
+        response_content = response.get("answer", "")
+        chat_history.append(AIMessage(content=response_content))
+
+        # Generate audio and blendshape data for the response
+        audio_response = synthesize_response(response_content)
+
+        return jsonify_fast({
+            "text": response_content,
+            "audio": audio_response.get("audio"),
+            "blendshapes": audio_response.get("blendshapes"),
+        })
+
+    except Exception as e:
+        print(f"Error during processing: {e}")
+        return jsonify_fast({"error": "An error occurred while generating the response."}), 500
+
+# Global error handler
+@app.errorhandler(Exception)
+def handle_exception(e):
+    print(f"Unhandled exception: {e}")
+    return jsonify_fast({"error": "Internal server error"}), 500
 
 # Run Flask App
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+    app.run(debug=True)
+
 
 
 

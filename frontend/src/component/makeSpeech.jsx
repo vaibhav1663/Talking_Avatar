@@ -1,10 +1,12 @@
 import axios from "axios";
 import useSpeechStore from "./store/useSpeechStore";
 
+
 const makeSpeech = async (text) => {
   const setAudio = useSpeechStore.getState().setAudio;
   const setBlendshapes = useSpeechStore.getState().setBlendshapes;
   const setSpeak = useSpeechStore.getState().setSpeak;
+
 
   try {
     const response = await axios.post("http://127.0.0.1:5000/generate", {

@@ -33,7 +33,7 @@ const Chat = () => {
   const handleNewMessage = async (data) => {
     setIsChatVisible(true);
 
-    if (data.text) {
+    if (data.text && data.text.trim().length > 0) {
       setChats((prevChats) => [...prevChats, { msg: data.text, who: "me" }]);
       setLoading(true);
 
