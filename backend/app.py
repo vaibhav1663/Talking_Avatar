@@ -90,7 +90,7 @@ def get_conversational_rag_chain(retriever_chain):
 
 # Initialize Azure Speech Synthesizer
 speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=service_region)
-speech_config.speech_synthesis_voice_name = "en-US-EmmaMultilingualNeural"
+speech_config.speech_synthesis_voice_name = "en-GB-AdaMultilingualNeural"
 speech_config.set_speech_synthesis_output_format(speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3)
 
 synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
