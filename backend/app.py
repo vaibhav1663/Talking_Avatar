@@ -9,7 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from Template.promptAI import AI_prompt
-import azure.cognitiveservices.speech as speechsdk
+from azure.cognitiveservices.speech import  SpeechConfig, SpeechSynthesizer, AudioConfig, SpeechSynthesisOutputFormat
 import base64
 import os
 import orjson
@@ -89,11 +89,11 @@ def get_conversational_rag_chain(retriever_chain):
         raise
 
 # Initialize Azure Speech Synthesizer
-speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=service_region)
-speech_config.speech_synthesis_voice_name = "en-GB-AdaMultilingualNeural"
-speech_config.set_speech_synthesis_output_format(speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3)
+speech_config = SpeechConfig(subscription=speech_key, region=service_region)
+speech_config.speech_synthesis_voice_name = "en-US-JennyMultilingualNeural"
+speech_config.set_speech_synthesis_output_format(SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3)
 
-synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
+synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=None)
 
 # TTS function to synthesize response and generate viseme + blendshape data
 def synthesize_response(text):
@@ -101,7 +101,6 @@ def synthesize_response(text):
         print("Invalid text passed to synthesize_response.")
         return {"audio": None, "blendshapes": []}
 
-    visemes = []
     blendshapes = []
     time_step = 1 / 60  # 60 FPS
     time_stamp = 0
@@ -119,27 +118,22 @@ def synthesize_response(text):
     ssml = ssml_template.format(voice_name=speech_config.speech_synthesis_voice_name, text=text)
     print(f"Generated SSML: {ssml}")  # Log SSML for debugging
 
-    def viseme_callback(evt):
+    def viseme_callback(event):
         nonlocal time_stamp
-        try:
-            if evt.animation:
-                animation_data = json.loads(evt.animation)
-                for blend_array in animation_data.get("BlendShapes", []):
-                    blend = {blendshape_names[i]: blend_array[i] for i in range(len(blendshape_names))}
-                    blendshapes.append({"time": time_stamp, "blendshapes": blend})
-                    time_stamp += time_step
-            else:
-                print("No animation data received in viseme callback.")
-        except json.JSONDecodeError as e:
-            print(f"JSON decoding error in viseme_callback: {e}")
-        except Exception as e:
-            print(f"Error in viseme_callback: {e}")
+        animation = json.loads(event.animation)
+        for blend_array in animation.get("BlendShapes", []):
+            blend = {blendshape_names[i]: blend_array[i] for i in range(len(blendshape_names))}
+            blendshapes.append({"time": time_stamp, "blendshapes": blend})
+            time_stamp += time_step
 
     synthesizer.viseme_received.connect(viseme_callback)
     result = synthesizer.speak_ssml_async(ssml).get()
 
-    if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+    if result.reason == result.reason.SynthesizingAudioCompleted: 
         audio_data = base64.b64encode(result.audio_data).decode("utf-8")
+        print(time_stamp)
+        audio_duration_seconds = result.audio_duration.total_seconds()
+        print(f"Audio length: {audio_duration_seconds} seconds")
         return {
             "audio": audio_data,
             "blendshapes": blendshapes,

@@ -216,9 +216,11 @@ export default function Avatar({ avatar_url }) {
             createAnimation(blendshapes, morphTargetDictionaryBody, 'HG_Body'),
             createAnimation(blendshapes, morphTargetDictionaryLowerTeeth, 'HG_TeethLower'),
           ];
-
+          console.log(newClips);
+          console.log(audioElement.duration);
+          console.log(newClips);
           setClips(newClips);
-        }, 350);
+        }, 150);
 
         audioElement.play().catch((err) => {
           console.error('Error playing audio:', err);
@@ -227,6 +229,7 @@ export default function Avatar({ avatar_url }) {
 
       // Set speak to false after audio ends
       audioElement.addEventListener('ended', () => {
+        console.log('ended');
         setSpeak(false); // Set speak to false
       });
 
@@ -293,7 +296,7 @@ export default function Avatar({ avatar_url }) {
 
     });
 
-  }, [clips, mixer, audio]);
+  }, [clips]);
 
   useFrame((state, delta) => {
     mixer.update(delta);
